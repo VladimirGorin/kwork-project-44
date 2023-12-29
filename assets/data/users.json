@@ -1,1 +1,64 @@
-[]
+[
+	{
+		"id": 6783709099,
+		"nick": "LuckyJet_Uchar",
+		"name": "Admin Uchar",
+		"haveAссess": true
+	},
+	{
+		"id": 1281678517,
+		"nick": "ibragimovzuxriddin",
+		"name": "Зухриддин",
+		"haveAссess": true
+	},
+	{
+		"id": 1454688178,
+		"nick": "HesoyamiJs",
+		"name": "Heso",
+		"haveAссess": true
+	},
+	{
+		"id": 499160565,
+		"nick": "muhri9527",
+		"name": "Ибрагимов",
+		"haveAссess": true
+	},
+	{
+		"id": 1120656634,
+		"nick": "ibrgmv_a",
+		"name": "Amina",
+		"haveAссess": true
+	},
+	{
+		"id": 5986895098,
+		"name": "LFS",
+		"haveAссess": false
+	},
+	{
+		"id": 6440082922,
+		"name": ".",
+		"haveAссess": false
+	},
+	{
+		"id": 450832225,
+		"nick": "azamataxrorov0128",
+		"name": "Azamat",
+		"haveAссess": true
+	},
+	{
+		"id": 5143064737,
+		"nick": "Xojamberdiyev20",
+		"name": "Doniyorbek",
+		"haveAссess": false
+	},
+	{
+		"id": 5104993712,
+		"name": ".",
+		"haveAссess": false
+	},
+	{
+		"id": 580027463,
+		"name": "𝑅𝓊𝓈𝒽𝒶𝓃𝒶",
+		"haveAссess": false
+	}
+]
