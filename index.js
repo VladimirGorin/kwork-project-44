@@ -321,6 +321,10 @@ try {
                     text: "Добавить кнопки",
                     callback_data: `addButtons`,
                   },
+                  {
+                    text: "Удалить кнопки",
+                    callback_data: `removeButtons`,
+                  },
                 ],
                 [
                   {
@@ -360,6 +364,48 @@ try {
           };
 
           bot.on("message", addButtons);
+
+          break;
+
+        case "removeButtons":
+          bot.sendMessage(user.id, "Введите названия кнопок через запятую");
+
+          const removeButtons = (msg) => {
+            const formatedButtons = msg?.text.split(",");
+
+            let removedButtons = [];
+
+            formatedButtons.forEach((item) => {
+              const buttonIndex = buttons.findIndex(
+                (button) => button.text === item
+              );
+
+              if (buttonIndex !== -1) {
+                removedButtons.push(buttons[buttonIndex]);
+                buttons.splice(buttonIndex, 1);
+              }
+            });
+
+            if (removedButtons.length > 0) {
+              fs.writeFileSync(
+                "./assets/data/buttons.json",
+                JSON.stringify(buttons, null, "\t")
+              );
+
+              bot.sendMessage(
+                user.id,
+                `Удалены кнопки: ${removedButtons
+                  .map((btn) => btn.text)
+                  .join(", ")}`
+              );
+            } else {
+              bot.sendMessage(user.id, "Кнопки не найдены в базе данных.");
+            }
+
+            bot.removeListener("message", removeButtons);
+          };
+
+          bot.on("message", removeButtons);
 
           break;
 
