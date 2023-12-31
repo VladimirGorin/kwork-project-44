@@ -1,6 +1,7 @@
 require("dotenv").config({ path: "./assets/.env" });
 const winston = require("winston");
 const { combine, timestamp, printf } = winston.format;
+const cron = require("node-cron");
 
 const testMode = JSON.parse(process.env.TEST_MODE);
 
@@ -48,7 +49,11 @@ try {
 
     if (query.includes("cancel:")) {
       if (!user) {
-        bot.sendMessage(adminChatId, `Пользователь не найден ${userId}`);
+        users.forEach((admin) => {
+          if (admin.isAdmin) {
+            bot.sendMessage(admin.id, `Пользователь не найден ${userId}`);
+          }
+        });
       }
       user.haveAссess = false;
 
@@ -58,16 +63,23 @@ try {
       );
 
       bot.sendMessage(userId, `Доступ отклонен!`);
-
-      bot.sendMessage(
-        adminChatId,
-        `Вы успешно отклонили доступ для ${
-          user?.nick || user?.name
-        }!\nПользователю был отправлен ответ`
-      );
+      users.forEach((admin) => {
+        if (admin.isAdmin) {
+          bot.sendMessage(
+            admin.id,
+            `Вы успешно отклонили доступ для ${
+              user?.nick || user?.name
+            }!\nПользователю был отправлен ответ`
+          );
+        }
+      });
     } else if (query.includes("accepted:")) {
       if (!user) {
-        bot.sendMessage(adminChatId, `Пользователь не найден ${userId}`);
+        users.forEach((admin) => {
+          if (admin.isAdmin) {
+            bot.sendMessage(admin.id, `Пользователь не найден ${userId}`);
+          }
+        });
       }
       user.haveAссess = true;
 
@@ -81,18 +93,24 @@ try {
         `Ваша заявка принята!\nДля активации пропишите /start`
       );
 
-      bot.sendMessage(
-        adminChatId,
-        `Вы успешно выдали доступ для ${
-          user?.nick || user?.name
-        }!\nПользователю была направлена инструкция`
-      );
+      users.forEach((admin) => {
+        if (admin.isAdmin) {
+          bot.sendMessage(
+            admin.id,
+            `Вы успешно выдали доступ для ${
+              user?.nick || user?.name
+            }!\nПользователю была направлена инструкция`
+          );
+        }
+      });
     }
   }
 
   function adminPanel(msg) {
     const users = JSON.parse(fs.readFileSync("./assets/data/users.json"));
     const texts = JSON.parse(fs.readFileSync("./assets/data/texts.json"));
+    const buttons = JSON.parse(fs.readFileSync("./assets/data/buttons.json"));
+
     let user = users.filter((x) => x.id === msg.from.id)[0];
 
     const query = msg?.data;
@@ -102,7 +120,7 @@ try {
       return;
     }
 
-    if (user.id === adminChatId) {
+    if (user.isAdmin) {
       switch (query) {
         case "changeFirstMessage":
           bot.sendMessage(user.id, "Выберете вариант изминения", {
@@ -218,6 +236,216 @@ try {
           bot.on("message", changeTwoMessageText);
 
           break;
+        case "addAdmins":
+          bot.sendMessage(
+            user.id,
+            "Отправьте ID админа или админов через запятую\nПолучить его можно в этом боте - @GetMyChatID_Bot"
+          );
+
+          const addAdmins = (msg) => {
+            const adminsIds = (msg?.text.trim().split(",") || []).map(Number);
+
+            users?.forEach((item) => {
+              const userId = item.id;
+
+              if (adminsIds.includes(userId)) {
+                item.isAdmin = true;
+              }
+            });
+
+            adminsIds.forEach((adminId) => {
+              const foundUser = users.find((user) => user.id === adminId);
+
+              if (!foundUser) {
+                bot.sendMessage(
+                  user.id,
+                  `Пользователь с ID ${adminId} не найден`
+                );
+              } else {
+                bot.sendMessage(user.id, `Пользователь с ID ${adminId} найден`);
+              }
+            });
+
+            fs.writeFileSync(
+              "./assets/data/users.json",
+              JSON.stringify(users, null, "\t")
+            );
+
+            bot.removeListener("message", addAdmins);
+          };
+
+          bot.on("message", addAdmins);
+
+          break;
+
+        case "changeMessages":
+          bot.sendMessage(
+            user.id,
+            "Выберете сообщения которое вы хотите изминить",
+            {
+              reply_markup: JSON.stringify({
+                inline_keyboard: [
+                  [
+                    {
+                      text: "Первое сообщение",
+                      callback_data: `changeFirstMessage`,
+                    },
+                  ],
+                  [
+                    {
+                      text: "Второе сообщение",
+                      callback_data: `changeTwoMessage`,
+                    },
+                  ],
+                ],
+              }),
+            }
+          );
+
+        case "analytics":
+          const dailyAssetCount = users.filter((u) => u.dailyAsset).length;
+          const adminsCount = users.filter((u) => u.isAdmin).length;
+          const haveAссessCount = users.filter((u) => u.haveAссess).length;
+          const text = `Всего людей в базе: ${users?.length}\nВсего используют каждый день: ${dailyAssetCount}\nВсего людей имеют доступ к боту: ${haveAссessCount}\nВсего админов: ${adminsCount}`;
+
+          bot.sendMessage(user.id, text);
+
+          break;
+
+        case "buttons":
+          bot.sendMessage(user.id, "Выберете работу с кнопками:", {
+            reply_markup: JSON.stringify({
+              inline_keyboard: [
+                [
+                  {
+                    text: "Добавить кнопки",
+                    callback_data: `addButtons`,
+                  },
+                ],
+                [
+                  {
+                    text: "Добавить контент в кнопки",
+                    callback_data: `addContent`,
+                  },
+                ],
+              ],
+            }),
+          });
+
+          break;
+
+        case "addButtons":
+          bot.sendMessage(user.id, "Введите названия кнопок через запятую");
+
+          const addButtons = (msg) => {
+            const formatedButtons = msg?.text.split(",");
+
+            formatedButtons.forEach((item) => {
+              buttons.push({
+                text: item,
+                content: {
+                  caption: "Заглушка",
+                  imagePath: null,
+                },
+              });
+            });
+
+            fs.writeFileSync(
+              "./assets/data/buttons.json",
+              JSON.stringify(buttons, null, "\t")
+            );
+
+            bot.sendMessage(user.id, "Кнопки успешно установлены");
+            bot.removeListener("message", addButtons);
+          };
+
+          bot.on("message", addButtons);
+
+          break;
+
+        case "addContent":
+          bot.sendMessage(
+            user.id,
+            "Отправьте названия кнопки а за тем картинку с подписью если хотите загрузить сообщение с картинкой\nПример:Названия кнопки, Контент кнопки [фото]"
+          );
+
+          const addContent = (msg) => {
+            const text = msg?.text || msg?.caption;
+            const formatedText = text?.split(",");
+
+            const findButton = buttons.find(
+              (button) => button?.text === formatedText[0]
+            );
+
+            if (!findButton) {
+              bot.sendMessage(user.id, "Кнопка не найдена!");
+
+              bot.removeListener("message", addContent);
+              bot.removeListener("photo", addContent);
+              return;
+            }
+
+            if (!formatedText[1]) {
+              bot.sendMessage(user.id, "Не найдено текст!");
+
+              bot.removeListener("message", addContent);
+              bot.removeListener("photo", addContent);
+              return;
+            }
+
+            if (msg.photo) {
+              const fileId = msg.photo[msg.photo.length - 1].file_id;
+
+              if (!user) {
+                console.error("User not found");
+                return;
+              }
+
+              const filePath = `./assets/data/images/${fileId}.jpg`;
+              const fileStream = fs.createWriteStream(filePath);
+
+              bot.getFileStream(fileId).pipe(fileStream);
+
+              fileStream.on("error", (error) => {
+                console.error(`Error downloading file: ${error}`);
+              });
+
+              fileStream.on("finish", () => {
+                findButton.content.caption = formatedText[1];
+                findButton.content.imagePath = filePath;
+
+                fs.writeFileSync(
+                  "./assets/data/buttons.json",
+                  JSON.stringify(buttons, null, "\t")
+                );
+                bot.sendMessage(
+                  user.id,
+                  `Картинка с текстом для кнопки ${formatedText[0]} успешно установлены`
+                );
+              });
+            } else {
+              findButton.content.caption = formatedText[1];
+              findButton.content.imagePath = null;
+
+              fs.writeFileSync(
+                "./assets/data/buttons.json",
+                JSON.stringify(buttons, null, "\t")
+              );
+
+              bot.sendMessage(
+                user.id,
+                `Текст для кнопки ${formatedText[0]} успешно установлена`
+              );
+            }
+
+            bot.removeListener("message", addContent);
+            bot.removeListener("photo", addContent);
+          };
+
+          bot.on("message", addContent);
+          bot.on("photo", addContent);
+
+          break;
 
         default:
           break;
@@ -230,12 +458,20 @@ try {
   function filterMessages(messageType, msg) {
     const users = JSON.parse(fs.readFileSync("./assets/data/users.json"));
     const texts = JSON.parse(fs.readFileSync("./assets/data/texts.json"));
+    const buttons = JSON.parse(fs.readFileSync("./assets/data/buttons.json"));
     let user = users.filter((x) => x.id === msg.from.id)[0];
 
     const username = user?.nick || user?.name;
 
     const command = msg?.text;
     const query = msg?.data;
+
+    user.dailyAsset = true;
+
+    fs.writeFileSync(
+      "./assets/data/users.json",
+      JSON.stringify(users, null, "\t")
+    );
 
     if (!user) {
       console.error("ChatId not found");
@@ -247,35 +483,45 @@ try {
         if (command) {
           switch (command) {
             case "/admin":
-              if (user.id === adminChatId) {
-                bot.sendMessage(
-                  user.id,
-                  "Выберете сообщения которое вы хотите изминить",
-                  {
-                    reply_markup: JSON.stringify({
-                      inline_keyboard: [
-                        [
-                          {
-                            text: "Первое сообщение",
-                            callback_data: `changeFirstMessage`,
-                          },
-                        ],
-                        [
-                          {
-                            text: "Второе сообщение",
-                            callback_data: `changeTwoMessage`,
-                          },
-                        ],
+              if (user.isAdmin) {
+                bot.sendMessage(user.id, "Админ панель", {
+                  reply_markup: JSON.stringify({
+                    inline_keyboard: [
+                      [
+                        {
+                          text: "Изминить сообщения",
+                          callback_data: `changeMessages`,
+                        },
                       ],
-                    }),
-                  }
-                );
+                      [
+                        {
+                          text: "Назначить админов",
+                          callback_data: `addAdmins`,
+                        },
+                      ],
+                      [
+                        {
+                          text: "Работа с кнопками",
+                          callback_data: `buttons`,
+                        },
+                      ],
+                      [
+                        {
+                          text: "Получить аналитику",
+                          callback_data: `analytics`,
+                        },
+                      ],
+                    ],
+                  }),
+                });
               } else {
                 bot.sendMessage(user.id, "Вы не админ");
               }
               break;
 
             case "/start":
+              const buttonsText = buttons.map((item) => [item.text]);
+
               bot.sendPhoto(user.id, "./assets/data/images/firstMessage.jpg", {
                 caption: `${username} salom👋\n\nSizni, LuckyJet oyini uchun, signal beruvchi botida, korganimizdan hursandmiz😊\n\nBuyerda, bot sizga LuckyJet oyinida, raketa qachon va qay vaqtda uchishini aniq aytib beradi, oyida omad va etiborli bo'ling😎`,
                 reply_markup: {
@@ -284,6 +530,7 @@ try {
                       "Signal olish",
                       "O'yinga oid, barcha qiziqarli savollaringizga javob‼",
                     ],
+                    ...buttonsText,
                   ],
                   resize_keyboard: true,
                 },
@@ -304,6 +551,20 @@ try {
               break;
 
             default:
+              const findQuery = buttons.find(
+                (button) => button?.text === command
+              );
+
+              if (findQuery) {
+                if (findQuery?.content?.imagePath) {
+                  bot.sendPhoto(user.id, findQuery?.content?.imagePath, {
+                    caption: findQuery?.content?.caption,
+                  });
+                } else {
+                  bot.sendMessage(user.id, findQuery?.content?.caption);
+                }
+              }
+
               break;
           }
         } else {
@@ -353,23 +614,24 @@ try {
     }
 
     const chatId = msg.chat.id;
-    const getUsers = JSON.parse(fs.readFileSync("./assets/data/users.json"));
-    let user = getUsers.filter((x) => x.id === msg.from.id)[0];
+    const users = JSON.parse(fs.readFileSync("./assets/data/users.json"));
+    let user = users.filter((x) => x.id === msg.from.id)[0];
 
     if (!user) {
       const admin = chatId === adminChatId;
 
-      getUsers.push({
+      users.push({
         id: msg.from.id,
         nick: msg.from.username,
         name: msg.from.first_name,
         haveAссess: admin ? true : false,
+        isAdmin: admin ? true : false,
       });
 
-      user = getUsers.filter((x) => x.id === msg.from.id)[0];
+      user = users.filter((x) => x.id === msg.from.id)[0];
       fs.writeFileSync(
         "./assets/data/users.json",
-        JSON.stringify(getUsers, null, "\t")
+        JSON.stringify(users, null, "\t")
       );
     }
 
@@ -383,5 +645,20 @@ try {
   console.log("Have new error! Check in logs");
   errorLogger.error(error);
 }
+
+cron.schedule("0 12 * * *", () => {
+  const users = JSON.parse(fs.readFileSync("./assets/data/users.json"));
+  console.log("first");
+  users?.forEach((user) => {
+    if (user.dailyAsset) {
+      user.dailyAsset = false;
+    }
+  });
+
+  fs.writeFileSync(
+    "./assets/data/users.json",
+    JSON.stringify(users, null, "\t")
+  );
+});
 
 bot.on("polling_error", console.log);
