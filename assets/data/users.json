@@ -1,1 +1,40 @@
-[]
+[
+	{
+		"id": 6783709099,
+		"nick": "LuckyJet_Uchar",
+		"name": "Admin Uchar",
+		"haveAссess": true,
+		"isAdmin": true,
+		"dailyAsset": true
+	},
+	{
+		"id": 6163683527,
+		"name": "Hacker 228",
+		"haveAссess": false,
+		"isAdmin": false,
+		"dailyAsset": true
+	},
+	{
+		"id": 6757620976,
+		"nick": "Admiin_LuckyjetUchar",
+		"name": "Admin",
+		"haveAссess": false,
+		"isAdmin": true,
+		"dailyAsset": true
+	},
+	{
+		"id": 6751733233,
+		"name": "Xolmat",
+		"haveAссess": false,
+		"isAdmin": false,
+		"dailyAsset": true
+	},
+	{
+		"id": 1281678517,
+		"nick": "ibragimovzuxriddin",
+		"name": "Зухриддин",
+		"haveAссess": false,
+		"isAdmin": false,
+		"dailyAsset": true
+	}
+]
