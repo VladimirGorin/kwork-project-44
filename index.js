@@ -9,6 +9,8 @@ const adminChatId = Number(
   testMode ? process.env.TEST_ADMIN_CHAT_ID : process.env.ADMIN_CHAT_ID
 );
 
+console.log(adminChatId)
+
 const TelegramBotApi = require("node-telegram-bot-api");
 const bot = new TelegramBotApi(
   testMode ? process.env.TOKEN_TEST : process.env.TOKEN,

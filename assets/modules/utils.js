@@ -1,5 +1,5 @@
 const fs = require("fs");
-const testMode = Boolean(process.env.TEST_MODE);
+const testMode = JSON.parse(process.env.TEST_MODE);
 
 function generateRandomSignal() {
   const randomSignal = (Math.random() * (3.5 - 1.5) + 1.5).toFixed(2);
