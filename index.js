@@ -245,7 +245,7 @@ try {
           );
 
           const addAdmins = (msg) => {
-            const adminsIds = (msg?.text.trim().split(",") || []).map(Number);
+            const adminsIds = (msg?.text.trim().split(", ") || []).map(Number);
 
             users?.forEach((item) => {
               const userId = item.id;
@@ -344,7 +344,7 @@ try {
           bot.sendMessage(user.id, "Введите названия кнопок через запятую");
 
           const addButtons = (msg) => {
-            const formatedButtons = msg?.text.split(",");
+            const formatedButtons = msg?.text.split(", ");
 
             formatedButtons.forEach((item) => {
               buttons.push({
@@ -373,7 +373,7 @@ try {
           bot.sendMessage(user.id, "Введите названия кнопок через запятую");
 
           const removeButtons = (msg) => {
-            const formatedButtons = msg?.text.split(",");
+            const formatedButtons = msg?.text.split(", ");
 
             let removedButtons = [];
 
@@ -419,7 +419,7 @@ try {
 
           const addContent = (msg) => {
             const text = msg?.text || msg?.caption;
-            const formatedText = text?.split(",");
+            const formatedText = text?.split(", ");
 
             const findButton = buttons.find(
               (button) => button?.text === formatedText[0]
